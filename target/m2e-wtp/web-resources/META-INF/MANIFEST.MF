@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Implementation-Title: podsupapi
+Implementation-Version: 1.0.4
+Built-By: Siriwat
+Implementation-Vendor-Id: com.amos.warehouse
+Build-Jdk: 1.8.0_231
+Implementation-URL: https://projects.spring.io/spring-boot/#/spring-bo
+ ot-starter-parent/podsupapi
+Created-By: Maven Integration for Eclipse
+
