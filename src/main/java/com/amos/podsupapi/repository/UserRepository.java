@@ -3,6 +3,7 @@ package com.amos.podsupapi.repository;
 import java.util.List;
 
 import com.amos.podsupapi.model.User;
+import com.amos.podsupapi.model.UserExternal;
 
 public interface UserRepository {
 
@@ -16,16 +17,22 @@ public interface UserRepository {
 
   void addUser(User user);
 
-  void updateUser(User user);
+  void updateUserInternal(User user);
 
   // void deleteUser(User user);
   //
-  User getUserByEmail(String email);
+  UserExternal getUserByEmail(String email);
 
   boolean userExists(String username);
 
   User getUserByUsername(String username);
 
   void updatePassword(User usr, String hashPassword_New);
+
+  List<Object[]> findProductLine(Integer id);
+
+  void updateUserExternal(UserExternal usrEx);
+
+  User getUserInternalByEmail(String email);
 
 }

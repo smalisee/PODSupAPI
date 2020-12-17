@@ -30,6 +30,7 @@ public class POManagentViewDTO implements Serializable {
   private String city;
   private String zipcode;
   private String statusSend;
+  private String statusSend_keyword;
   private String sendDate;
   private String sendBy;
   private String i_order;

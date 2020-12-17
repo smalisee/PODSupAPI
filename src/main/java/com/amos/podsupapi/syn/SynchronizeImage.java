@@ -23,7 +23,7 @@ public class SynchronizeImage {
 
   @Scheduled(cron = "0 0 * * * *")
   public void synchronize() {
-    String imagePath = AppConfig.getApiDeliveryBasePathFiles();
+    String imagePath = AppConfig.getApiDeliveryBasePathImages();
     if (AppConfig.isCronSyncImageAwsEnable()) {
       LOGGER.info("SynchronizeImage Start");
       walk(imagePath);

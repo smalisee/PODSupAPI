@@ -19,7 +19,9 @@ public enum ReturnCode {
 	STATUS_AUTO_PO(113, "The status of Auto PO cannot be modified","Status ของ Auto PO ไม่สามารถแก้ไขข้อมูลได้"),
 	INTERNAL_WEB_SERVICE_ERROR(201,"Internal web service error","ไม่สามารถติดต่อระบบสำนักงานใหญ่ได้"),
 	UNAUTHORIZED(401,"Unauthorized request, sign token is invalid or token expired","ไม่ผ่านการตรวจสอบ token หรือ token หมดอายุ"),
-  INVALID_RE_PASSWORD(114,"NEW & RE-NEW Password not equal","ยืนยันรหัสผ่านใหม่ไม่ถูกต้อง");
+  INVALID_RE_PASSWORD(114,"NEW & RE-NEW Password not equal","ยืนยันรหัสผ่านใหม่ไม่ถูกต้อง"),
+  USERNAME_ALREADY_EXIST(115,"Username is exist","มี username หรือ Email นี้ในระบบแล้ว"),
+  INVALID_PASSWORD_LENGTH(116,"password leght incorrect up more than 4 character","ความยาวรหัสผ่านไม่ถูกต้อง");
 
 	private final int code;
 	private final String message;

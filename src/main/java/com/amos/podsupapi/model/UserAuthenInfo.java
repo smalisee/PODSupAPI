@@ -1,6 +1,5 @@
 package com.amos.podsupapi.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.amos.podsupapi.dto.ReturnStatusDTO;
@@ -33,7 +32,7 @@ public class UserAuthenInfo {
   private int vendor;
 
   @JsonProperty("prodLines")
-  private List<ProductLine> prodLines = new ArrayList<>();
+  private List<ProductLine> prodLines;
 
   @JsonProperty("phone")
   private String phoneno;

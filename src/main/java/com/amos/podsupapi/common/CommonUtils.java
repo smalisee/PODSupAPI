@@ -119,9 +119,9 @@ private CommonUtils() {}
 			while((hasRead = stream.read(buffer)) > 0){
 				count += hasRead;
 			}
-//			if(count != stream.available()) {
-//				throw(new IOException("total available and actual read is mismatch"));
-//			}
+			if(count != stream.available()) {
+				throw(new IOException("total available and actual read is mismatch"));
+			}
 			return buffer;
 		}
 	}

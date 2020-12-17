@@ -2,8 +2,6 @@ package com.amos.podsupapi.controller;
 
 import java.util.List;
 
-import javax.persistence.NoResultException;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +9,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.http.MediaType;
+
 import com.amos.podsupapi.common.ReturnCode;
 import com.amos.podsupapi.dto.APIResultDTO;
 import com.amos.podsupapi.dto.POManageReportSearchDTO;
@@ -24,16 +20,12 @@ import com.amos.podsupapi.dto.POManagentViewDTO;
 import com.amos.podsupapi.dto.ReturnStatusDTO;
 import com.amos.podsupapi.dto.admin.AutoFactoryPODTO;
 import com.amos.podsupapi.services.AutoFactoryPOService;
-import com.amos.podsupapi.services.WebResourceService;
 
 @RestController
 public class AutoFactoryPOController {
 
   @Autowired
   private AutoFactoryPOService autoFactoryPOService;
-  
-  @Autowired
-  private WebResourceService webResourceService;
 
   private static Logger logger = LogManager.getLogger(AutoFactoryPOController.class);
 
@@ -100,6 +92,5 @@ public class AutoFactoryPOController {
     return new ResponseEntity<>(new APIResultDTO(new ReturnStatusDTO(ReturnCode.SUCCESS), result), HttpStatus.OK);
 
   }
-  
 
 }

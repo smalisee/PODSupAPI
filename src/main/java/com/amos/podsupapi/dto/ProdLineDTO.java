@@ -7,12 +7,12 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ProdLineDTO implements Serializable{
+public class ProdLineDTO implements Serializable {
 
-	private static final long serialVersionUID = 1L;
-	
-	private Integer prod1;
-	private Integer prod3;
-	private String mapProd;
+  private static final long serialVersionUID = 1L;
+
+  private Integer prodline1;
+  private Integer prodline3;
+  private String mapProd;
 
 }

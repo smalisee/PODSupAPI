@@ -21,6 +21,7 @@ import com.amos.podsupapi.model.ProductLine;
 import com.amos.podsupapi.model.Role;
 import com.amos.podsupapi.model.User;
 import com.amos.podsupapi.model.UserAuthenInfo;
+import com.amos.podsupapi.model.UserExternal;
 import com.amos.podsupapi.repository.AuthTokenRepositoryImpl;
 import com.amos.podsupapi.repository.ProductlineRepository;
 import com.amos.podsupapi.repository.RoleRepository;
@@ -50,12 +51,14 @@ public class LoginService {
     String token = null;
 
     try {
-      User uResult = userDao.getUserByEmail(email);
+      UserExternal checkTypeAndStatus = userDao.getUserByEmail(email);
       // Check If User Exist and Active
-      if (uResult != null && "A".equals(uResult.getStatus())) {
+      if (checkTypeAndStatus != null && "A".equals(checkTypeAndStatus.getStatus())) {
 
         // check LDAP for login Type.INTERNAL
-        if (UserType.INTERNAL.getCode().equals(uResult.getType())) {
+        if (UserType.INTERNAL.getCode().equals(checkTypeAndStatus.getType())) {
+
+          User uResult = userDao.getUserInternalByEmail(email);
 
           // Check login LDAP
           LDAPAuthen ap = new LDAPAuthen();
@@ -68,13 +71,73 @@ public class LoginService {
           if (emp_id != null && !emp_id.isEmpty()) {
             code = ReturnCode.SUCCESS;
           }
+
+          ArrayList<String> roleIdList = new ArrayList<>();
+          if (UserType.INTERNAL.getCode().equals(uResult.getType())) {
+
+            for (Role role : uResult.getRoles()) {
+              roleIdList.add(Integer.toString(role.getId()));
+            }
+
+            // ArrayList<Integer> prodIdList = new ArrayList<>();
+            List<ProductLine> prodIdList = new ArrayList<>();
+            ProductLine prodIdAdd = new ProductLine();
+            uResult.setProdLines(prodRepository.getProdlineByUserId(uResult.getId()));
+            for (ProductLine prodRepository : uResult.getProdLines()) {
+
+              prodIdAdd = new ProductLine();
+              prodIdAdd.setProdline1(prodRepository.getProdline1());
+              prodIdAdd.setProdline3(prodRepository.getProdline3());
+              prodIdAdd.setMapProd(prodRepository.getMapProd());
+
+              prodIdList.add(prodIdAdd);
+
+            }
+
+            user.setProdLines(prodIdList);
+
+            token = CommonJWT.JWTTokenGenerateBaseExpire(uResult.getUsername(), InterfaceTypeEnum.WEB.getCode(), roleIdList);
+
+            user.setTokenId(token);
+            user.setName((uResult.getName() == null) ? "" : uResult.getName());
+            user.setVendor((uResult.getVendorNo() == null) ? 0 : uResult.getVendorNo());
+            user.setEmail((uResult.getEmail() == null) ? "" : uResult.getEmail());
+            user.setPhoneno((uResult.getPhoneNo() == null) ? "" : uResult.getPhoneNo());
+            user.setId(uResult.getId());
+            user.setUsername(uResult.getUsername());
+            user.setType(uResult.getType());
+            user.setRole(uResult.getRoles());
+
+            code = ReturnCode.SUCCESS;
+          }
         }
         // check password for login Type.EXTERNAL
-        else if (UserType.EXTERNAL.getCode().equals(uResult.getType())) {
+        else if (UserType.EXTERNAL.getCode().equals(checkTypeAndStatus.getType())) {
           try {
             String passEncryt = CommonUtils.passwordEncrypt(password);
+            ArrayList<String> roleIdList = new ArrayList<>();
+
             // if password has match then Login SUCCESS
-            if (uResult.getPassword().equals(passEncryt)) {
+            if (checkTypeAndStatus.getPassword().equals(passEncryt)) {
+              token = CommonJWT.jwtTokenGenerateNoExpire(checkTypeAndStatus.getUsername(), InterfaceTypeEnum.MOBILE.getCode(),
+                  roleIdList);
+              // save NO EXPIRE token to database
+              AuthToken authToken = new AuthToken();
+              authToken.setUsername(checkTypeAndStatus.getUsername());
+              authToken.setToken(token);
+              authToken.setDevice(InterfaceTypeEnum.MOBILE.getMessage());
+              authToken.setCreateDate(LocalDate.now());
+              tokenDao.add(authToken);
+
+              user.setTokenId(token);
+              user.setName((checkTypeAndStatus.getName() == null) ? "" : checkTypeAndStatus.getName());
+              user.setVendor((checkTypeAndStatus.getVendorNo() == null) ? 0 : checkTypeAndStatus.getVendorNo());
+              user.setEmail((checkTypeAndStatus.getEmail() == null) ? "" : checkTypeAndStatus.getEmail());
+              user.setPhoneno((checkTypeAndStatus.getPhoneNo() == null) ? "" : checkTypeAndStatus.getPhoneNo());
+              user.setId(checkTypeAndStatus.getId());
+              user.setUsername(checkTypeAndStatus.getUsername());
+              user.setType(checkTypeAndStatus.getType());
+
               code = ReturnCode.SUCCESS;
             }
           } catch (Exception ex) {
@@ -83,57 +146,10 @@ public class LoginService {
         }
       }
 
-      // if Login SUCCESS generate token
-      if (ReturnCode.SUCCESS.equals(code)) {
-        // getUser Role for token
-        ArrayList<String> roleIdList = new ArrayList<>();
-        for (Role role : uResult.getRoles()) {
-          roleIdList.add(Integer.toString(role.getId()));
-        }
-
-        // ArrayList<Integer> prodIdList = new ArrayList<>();
-        List<ProductLine> prodIdList = new ArrayList<>();
-        ProductLine prodIdAdd = new ProductLine();
-        uResult.setProdlines(prodRepository.getProdlineByUserId(uResult.getId()));
-        for (ProductLine prodRepository : uResult.getProdlines()) {
-
-          prodIdAdd = new ProductLine();
-          prodIdAdd.setProdline1(prodRepository.getProdline1());
-          prodIdAdd.setProdline3(prodRepository.getProdline3());
-
-          prodIdList.add(prodIdAdd);
-
-        }
-
-        if (UserType.EXTERNAL.getCode().equals(uResult.getType())) {
-          token = CommonJWT.jwtTokenGenerateNoExpire(uResult.getUsername(), InterfaceTypeEnum.MOBILE.getCode(),
-              roleIdList);
-          // save NO EXPIRE token to database
-          AuthToken authToken = new AuthToken();
-          authToken.setUsername(uResult.getUsername());
-          authToken.setToken(token);
-          authToken.setDevice(InterfaceTypeEnum.MOBILE.getMessage());
-          authToken.setCreateDate(LocalDate.now());
-          tokenDao.add(authToken);
-        } else if (UserType.INTERNAL.getCode().equals(uResult.getType())) {
-          token = CommonJWT.JWTTokenGenerateBaseExpire(uResult.getUsername(), InterfaceTypeEnum.WEB.getCode(), roleIdList);
-        }
-        user.setTokenId(token);
-        user.setName((uResult.getName() == null) ? "" : uResult.getName());
-        user.setVendor((uResult.getVendorNo() == null) ? 0 : uResult.getVendorNo());
-        user.setEmail((uResult.getEmail() == null) ? "" : uResult.getEmail());
-        user.setPhoneno((uResult.getPhoneNo() == null) ? "" : uResult.getPhoneNo());
-        user.setId(uResult.getId());
-        user.setUsername(uResult.getUsername());
-        user.setProdLines(prodIdList);
-        user.setType(uResult.getType());
-
-        user.setRole(uResult.getRoles());
-      }
       user.setReturnResult(new ReturnStatusDTO(code));
 
       if (code == ReturnCode.SUCCESS) {
-        logger.info("Login with " + CommonUtils.toJsonString(uResult));
+        logger.info("Login with " + CommonUtils.toJsonString(checkTypeAndStatus));
       }
     } catch (Exception ex) {
       logger.error("Error on login() :" + ex.getMessage(), ex);

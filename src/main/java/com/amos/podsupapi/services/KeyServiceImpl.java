@@ -32,7 +32,7 @@ public class KeyServiceImpl implements KeyService {
   @Override
   public List<ChannelDTO> getAllChannel() {
     String sqlSelect = " select I_VALUE, S_KEYWORD, S_SHORTNAME "
-        + " from s_key where S_SUBTOPIC = 'iordersource' AND S_TOPIC = 'iordersource' order by I_VALUE ";
+        + " from s_key where S_SUBTOPIC = 'iordersource' AND S_TOPIC = 'iordersource' order by S_SHORTNAME asc ";
 
     Query query = entityManager.createNativeQuery(sqlSelect);
 
@@ -84,7 +84,7 @@ public class KeyServiceImpl implements KeyService {
     String sqlSelect = " select I_VENDOR,S_VENDORNAME , I_VENDOR|| ' - '||S_VENDORNAME AS MAP_VENDOR from p_vendor where c_vendortype='S' "
         +
         " and exists (select 1 from p_item where length(i_itemno)=6 " +
-        " and c_itemprofile='F' and i_vendor=p_vendor.i_vendor) ";
+        " and c_itemprofile='F' and i_vendor=p_vendor.i_vendor) ORDER BY p_vendor.i_vendor ";
 
     Query query = entityManager.createNativeQuery(sqlSelect);
 
@@ -123,8 +123,8 @@ public class KeyServiceImpl implements KeyService {
     for (Object[] obj : dataList) {
       prod = new ProdLineDTO();
 
-      prod.setProd1(((BigDecimal) obj[0]).intValue());
-      prod.setProd3(((BigDecimal) obj[1]).intValue());
+      prod.setProdline1(((BigDecimal) obj[0]).intValue());
+      prod.setProdline3(((BigDecimal) obj[1]).intValue());
       prod.setMapProd(obj[2].toString());
 
       vendorList.add(prod);

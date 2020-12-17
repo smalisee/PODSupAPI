@@ -1,12 +1,15 @@
 package com.amos.podsupapi.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 
 import org.springframework.stereotype.Repository;
 
+import com.amos.podsupapi.common.CommonUtils;
 import com.amos.podsupapi.model.ShipTo;
 
 @Repository
@@ -32,8 +35,35 @@ public class ShipToRepositoryImpl implements ShipToRepository {
     shiptol.setAddress3(shipto.getAddress3());
     shiptol.setCity(shipto.getCity());
     shiptol.setZipCode(shipto.getZipCode());
+    shiptol.setChange(LocalDate.now());
     entityManager.flush();
 
+  }
+
+  @Override
+  public List<Object[]> getShipto(String sqlSelect, int pono) {
+    // TODO Auto-generated method stub
+    Query query = entityManager.createNativeQuery(sqlSelect);
+    if (!CommonUtils.isNullOrEmpty(String.valueOf(pono))) {
+      query.setParameter("pono", pono);
+    }
+
+    List<Object[]> resultList = query.getResultList();
+    return resultList.size() > 0 ? resultList : null;
+  }
+
+  @Override
+  public void addShipto(ShipTo shipto) {
+    // TODO Auto-generated method stub
+
+    shipto.setCompany(0);
+    shipto.setShipTo("O");
+    shipto.setRunning(0);
+    shipto.setCountry(0);
+    shipto.setCreate(LocalDate.now());
+    shipto.setChange(LocalDate.now());
+    shipto.setOpCode("AM");
+    entityManager.persist(shipto);
   }
 
   @Override

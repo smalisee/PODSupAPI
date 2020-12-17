@@ -2,14 +2,11 @@ package com.amos.podsupapi.dto;
 
 import java.io.Serializable;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SupplierPODTO implements Serializable {
 
   /**
@@ -26,5 +23,6 @@ public class SupplierPODTO implements Serializable {
   private String delivery_date;
   private String delivery_by;
   private String trackingNo;
+  private String remark;
 
 }

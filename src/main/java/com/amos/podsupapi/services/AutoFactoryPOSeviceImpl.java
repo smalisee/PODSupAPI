@@ -88,14 +88,17 @@ public class AutoFactoryPOSeviceImpl implements AutoFactoryPOService {
         pomanage.setOrderDate((String) obj[0]);
         pomanage.setChannel((String) obj[1]);
         pomanage.setOrderNo((String) obj[2]);
-        pomanage.setPayMode((String) obj[3]);
-        pomanage.setFirstName((String) obj[4]);
-        pomanage.setLastName((String) obj[5]);
-        pomanage.setPhoneNo((String) obj[6]);
-        pomanage.setCvCode((String) obj[7]);
-        pomanage.setCvName((String) obj[8]);
-        pomanage.setPoNo(((BigDecimal) obj[9]).intValue());
-        pomanage.setProductLine(((BigDecimal) obj[10]).intValue());
+        pomanage.setIorder((String) obj[3]);
+        pomanage.setPayMode((String) obj[4]);
+        pomanage.setC_payMode((String) obj[5]);
+        pomanage.setFirstName((String) obj[6]);
+        pomanage.setLastName((String) obj[7]);
+        pomanage.setPhoneNo((String) obj[8]);
+        pomanage.setCvCode((String) obj[9]);
+        pomanage.setCvName((String) obj[10]);
+        pomanage.setPoNo(((BigDecimal) obj[11]).intValue());
+        pomanage.setProductLine(((BigDecimal) obj[12]).intValue());
+        pomanage.setStatusSend((String) obj[13]);
 
         POManageDTOlist.add(pomanage);
       }
@@ -180,11 +183,12 @@ public class AutoFactoryPOSeviceImpl implements AutoFactoryPOService {
         pomanage.setCity((String) obj[14]);
         pomanage.setZipcode((String) obj[15]);
         pomanage.setStatusSend((String) obj[16]);
-        pomanage.setSendDate((String) obj[17]);
-        pomanage.setSendBy((String) obj[18]);
-        pomanage.setTracking((String) obj[19]);
-        pomanage.setI_order((String) obj[20]);
-        pomanage.setPreview((String) obj[21]);
+        pomanage.setStatusSend_keyword((String) obj[17]);
+        pomanage.setSendDate((String) obj[18]);
+        pomanage.setSendBy((String) obj[19]);
+        pomanage.setTracking((String) obj[20]);
+        pomanage.setI_order((String) obj[21]);
+        pomanage.setPreview((String) obj[22]);
 
         List<Object[]> dataItemList = getItemAutoPODetailViewList(poNo);
         ArrayList<ItemDetailDTO> itmList = new ArrayList<>();
@@ -238,41 +242,48 @@ public class AutoFactoryPOSeviceImpl implements AutoFactoryPOService {
       String cvCode, String channel, String status) {
 
     String sqlSelect = " SELECT TO_CHAR (po.D_CVS_ORDER, 'dd-mm-yyyy') AS D_CVS_ORDER," +
-        "         K.S_SHORTNAME AS channel," +
-        "         po.S_EXTERN_ORDERNO," +
-        "         ord.C_PAYMODE," +
-        "         cus.S_FIRSTNAME," +
-        "         cus.S_NAME," +
-        "         cus.S_PHONENO1," +
-        "         CV.S_CVCODE," +
-        "         CV.S_CVNAME," +
-        "         po.I_PONO," +
-        "         itm.I_PRODLINE1," +
-        "         ks.S_VALUE AS Staus_SEND" +
-        "    FROM P_AUTO_FACTORY_POLINK po," +
-        "         P_ORDSUM ord," +
-        "         p_customer cus," +
-        "         p_cv CV," +
-        "         p_posize pz," +
-        "         p_item itm," +
-        "         p_posum posum," +
-        "         s_key k," +
-        "         WEBAPP.W05_P_FACTORY_POD_STATUS fpod," +
-        "         (SELECT *" +
-        "            FROM s_key_gosoft_det" +
-        "           WHERE S_KEYWORD = 'POD_SENDBYSUP_STATUS') ks" +
-        "   WHERE     po.i_order = ord.i_order" +
-        "         AND po.I_ACCOUNT = ord.I_ACCOUNT" +
-        "         AND po.I_ACCOUNT = cus.I_ACCOUNT" +
-        "         AND po.I_PONO = fpod.I_PONO" +
-        "         AND cus.I_ZIPCODE = CV.I_ZIPCODE(+)" +
-        "         AND cus.S_CITY = CV.S_CITY(+)" +
-        "         AND po.I_PONO = pz.I_PONO" +
-        "         AND pz.I_ITEMNO = itm.I_ITEMNO" +
-        "         AND po.I_PONO = posum.I_PONO" +
-        "         AND ord.I_ORDERSOURCE = k.I_VALUE" +
-        "         AND fpod.C_STATUS = ks.S_SUB_KEYWORD" +
-        "         AND K.S_SUBTOPIC = 'iordersource' ";
+        "       K.S_SHORTNAME AS channel," +
+        "       po.S_EXTERN_ORDERNO," +
+        "       TO_CHAR (po.I_ORDER) AS I_ORDER," +
+        "       paymode.s_shortname AS paymode," +
+        "       ord.C_PAYMODE," +
+        "       cus.S_FIRSTNAME," +
+        "       cus.S_NAME," +
+        "       cus.S_PHONENO1," +
+        "       CV.S_CVCODE," +
+        "       CV.S_CVNAME," +
+        "       po.I_PONO," +
+        "       itm.I_PRODLINE1," +
+        "       ks.S_VALUE AS Staus_SEND" +
+        "  FROM P_AUTO_FACTORY_POLINK po," +
+        "       P_ORDSUM ord," +
+        "       p_customer cus," +
+        "       p_cv CV," +
+        "       p_posize pz," +
+        "       p_item itm," +
+        "       p_posum posum," +
+        "       s_key k," +
+        "       WEBAPP.W05_P_FACTORY_POD_STATUS fpod," +
+        "       (SELECT *" +
+        "          FROM s_key_gosoft_det" +
+        "         WHERE S_KEYWORD = 'POD_SENDBYSUP_STATUS') ks," +
+        "       (SELECT *" +
+        "          FROM s_key" +
+        "         WHERE s_topic = 'cpaymode') paymode" +
+        " WHERE     po.i_order = ord.i_order" +
+        "       AND po.I_ACCOUNT = ord.I_ACCOUNT" +
+        "       AND po.I_ACCOUNT = cus.I_ACCOUNT" +
+        "       AND po.I_PONO = fpod.I_PONO(+)" +
+        "       AND cus.I_ZIPCODE = CV.I_ZIPCODE(+)" +
+        "       AND cus.S_CITY = CV.S_CITY(+)" +
+        "       AND po.I_PONO = pz.I_PONO" +
+        "       AND pz.I_ITEMNO = itm.I_ITEMNO" +
+        "       AND po.I_PONO = posum.I_PONO" +
+        "       AND ord.I_ORDERSOURCE = k.I_VALUE" +
+        "       AND fpod.C_STATUS = ks.S_SUB_KEYWORD(+)" +
+        "       AND K.S_TOPIC = 'iordersource'" +
+        "       AND posum.c_status NOT IN ('C', 'J')" +
+        "       AND ord.C_PAYMODE = paymode.c_value";
 
     String sqlWhere = "";
     sqlWhere = (CommonUtils.isNullOrEmpty(dateFrom)) ? sqlWhere
@@ -332,7 +343,9 @@ public class AutoFactoryPOSeviceImpl implements AutoFactoryPOService {
         "         CV.S_CVNAME," +
         "         po.I_PONO," +
         "         itm.I_PRODLINE1," +
-        "         ks.S_VALUE";
+        "         ks.S_VALUE," +
+        "         po.I_ORDER," +
+        "         paymode.s_shortname";
 
     String queryAll = sqlSelect + sqlWhere + sqlGroupBy;
     System.out.print(queryAll);
@@ -374,56 +387,57 @@ public class AutoFactoryPOSeviceImpl implements AutoFactoryPOService {
   private List<Object[]> getAutoPODetailViewList(String orderNo, String poNo) {
 
     String sqlSelect = " SELECT TO_CHAR (po.D_CVS_ORDER, 'dd-mm-yyyy') AS D_CVS_ORDER, " +
-        "         K.S_SHORTNAME                          AS channel, " +
-        "         po.S_EXTERN_ORDERNO, " +
-        "         ord.C_PAYMODE, " +
-        "         cus.S_FIRSTNAME, " +
-        "         cus.S_NAME, " +
-        "         cus.S_PHONENO1, " +
-        "         sh.S_FIRSTNAME AS FIRSTNAME_SHIP, " +
-        "         sh.S_NAME AS LASTNAME_SHIP, " +
-        "         sh.S_PHONENO1 AS PHONE1_SHIP, " +
-        "         sh.S_ADDRESS1 ,  " +
-        "         sh.S_ADDRESS7 , " +
-        "         sh.S_ADDRESS2 , " +
-        "         sh.S_ADDRESS3 , " +
-        "         sh.S_CITY, " +
-        "         to_char (sh.I_ZIPCODE) AS ZIPCODE, " +
-        "         ks.S_VALUE AS Staus_SEND, " +
-        "         to_char(fpod.D_DELIVERY,'dd-mm-yyyy') AS D_DELIVERY , " +
-        "         kd.S_VALUE AS Send_by , " +
-        "         fpod.S_DELIVERY_TRACKING," +
-        "         TO_CHAR (po.I_ORDER) as i_order, " +
-        "         po.S_PREVIEW " +
-        "    FROM P_AUTO_FACTORY_POLINK po, " +
-        "         P_ORDSUM            ord, " +
-        "         p_customer          cus, " +
-        "         p_cv                CV, " +
-        "         p_posize            pz, " +
-        "         p_item              itm, " +
-        "         p_posum             posum, " +
-        "         s_key               k, " +
-        "         p_shipto           sh, " +
-        "         WEBAPP.W05_P_FACTORY_POD_STATUS fpod, " +
-        "        (select * from  s_key_gosoft_det where S_KEYWORD = 'POD_SENDBYSUP_STATUS')  ks, " +
-        "        (select * from  s_key_gosoft_det where S_KEYWORD = 'POD_SENDBYSUP_DELIVERY_BY')  kd " +
-        "   WHERE     po.i_order = ord.i_order " +
-        "         AND po.I_ACCOUNT = ord.I_ACCOUNT " +
-        "         AND po.I_ACCOUNT = cus.I_ACCOUNT " +
-        "         AND po.I_ACCOUNT = sh.I_ACCOUNT " +
-        "         AND po.I_ORDER = sh.I_ORDER " +
-        "         AND po.I_PONO = fpod.I_PONO " +
-        "         AND cus.I_ZIPCODE = CV.I_ZIPCODE(+) " +
-        "         AND cus.S_CITY = CV.S_CITY(+) " +
-        "         AND po.I_PONO = pz.I_PONO " +
-        "         AND pz.I_ITEMNO = itm.I_ITEMNO " +
-        "         AND po.I_PONO = posum.I_PONO " +
-        "         AND ord.I_ORDERSOURCE = k.I_VALUE " +
-        "         AND fpod.I_DELIVERY_BY = kd.S_SUB_KEYWORD " +
-        "         AND fpod.C_STATUS = ks.S_SUB_KEYWORD " +
-        "         AND K.S_SUBTOPIC = 'iordersource' ";
+        "                 K.S_SHORTNAME                          AS channel, " +
+        "                 po.S_EXTERN_ORDERNO, " +
+        "                 ord.C_PAYMODE, " +
+        "                 cus.S_FIRSTNAME, " +
+        "                 cus.S_NAME, " +
+        "                 cus.S_PHONENO1, " +
+        "                 sh.S_FIRSTNAME AS FIRSTNAME_SHIP, " +
+        "                 sh.S_NAME AS LASTNAME_SHIP, " +
+        "                 sh.S_PHONENO1 AS PHONE1_SHIP, " +
+        "                 sh.S_ADDRESS1 ,  " +
+        "                 sh.S_ADDRESS7 , " +
+        "                 sh.S_ADDRESS2 , " +
+        "                 sh.S_ADDRESS3 , " +
+        "                 sh.S_CITY, " +
+        "                 to_char (sh.I_ZIPCODE) AS ZIPCODE, " +
+        "                 ks.S_VALUE AS Staus_SEND, " +
+        "                 ks.S_SUB_KEYWORD as status_keyword, " +
+        "                 to_char(fpod.D_DELIVERY,'dd-mm-yyyy') AS D_DELIVERY , " +
+        "                 kd.S_VALUE AS Send_by , " +
+        "                 fpod.S_DELIVERY_TRACKING," +
+        "                 TO_CHAR (po.I_ORDER) as i_order, " +
+        "                 po.S_PREVIEW " +
+        "            FROM P_AUTO_FACTORY_POLINK po, " +
+        "                 P_ORDSUM            ord, " +
+        "                 p_customer          cus, " +
+        "                 p_cv                CV, " +
+        "                 p_posize            pz, " +
+        "                 p_item              itm, " +
+        "                 p_posum             posum, " +
+        "                 s_key               k, " +
+        "                 p_shipto           sh, " +
+        "                 WEBAPP.W05_P_FACTORY_POD_STATUS fpod, " +
+        "                (select * from  s_key_gosoft_det where S_KEYWORD = 'POD_SENDBYSUP_STATUS')  ks, " +
+        "                (select * from  s_key_gosoft_det where S_KEYWORD = 'POD_SENDBYSUP_DELIVERY_BY')  kd " +
+        "           WHERE     po.i_order = ord.i_order " +
+        "                 AND po.I_ACCOUNT = ord.I_ACCOUNT " +
+        "                 AND po.I_ACCOUNT = cus.I_ACCOUNT " +
+        "                 AND po.I_ACCOUNT = sh.I_ACCOUNT " +
+        "                 AND po.I_ORDER = sh.I_ORDER " +
+        "                 AND po.I_PONO = fpod.I_PONO(+)" +
+        "                 AND cus.I_ZIPCODE = CV.I_ZIPCODE(+) " +
+        "                 AND cus.S_CITY = CV.S_CITY(+) " +
+        "                 AND po.I_PONO = pz.I_PONO " +
+        "                 AND pz.I_ITEMNO = itm.I_ITEMNO " +
+        "                 AND po.I_PONO = posum.I_PONO " +
+        "                 AND ord.I_ORDERSOURCE = k.I_VALUE " +
+        "                 AND fpod.I_DELIVERY_BY = kd.S_SUB_KEYWORD(+)" +
+        "                 AND fpod.C_STATUS = ks.S_SUB_KEYWORD(+)" +
+        "                 AND K.S_SUBTOPIC = 'iordersource' ";
 
-    String sqlWhere = " ";
+    String sqlWhere = "";
     sqlWhere = (CommonUtils.isNullOrEmpty(orderNo)) ? sqlWhere : sqlWhere + "  AND po.S_EXTERN_ORDERNO = :orderNo ";
     sqlWhere = (CommonUtils.isNullOrEmpty(poNo)) ? sqlWhere : sqlWhere + " AND po.I_PONO = :poNo ";
 
@@ -448,7 +462,8 @@ public class AutoFactoryPOSeviceImpl implements AutoFactoryPOService {
         "         fpod.D_DELIVERY," +
         "         kd.S_VALUE  , " +
         "         fpod.S_DELIVERY_TRACKING," +
-        "         po.S_PREVIEW";
+        "         po.S_PREVIEW," +
+        "         ks.S_SUB_KEYWORD";
 
     String queryAll = sqlSelect + sqlWhere + sqlGroupBy;
     Query query = entityManager.createNativeQuery(queryAll);

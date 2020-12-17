@@ -47,6 +47,7 @@ public class ProductlineRepositoryImpl implements ProductlineRepository {
 
       prod.setProdline1(((BigDecimal) obj[0]).intValue());
       prod.setProdline3(((BigDecimal) obj[1]).intValue());
+      prod.setMapProd(prod.getProdline3() + " - " + prod.getProdline1());
 
       prodList.add(prod);
     }

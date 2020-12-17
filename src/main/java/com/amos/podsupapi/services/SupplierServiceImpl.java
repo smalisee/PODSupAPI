@@ -1,19 +1,14 @@
 package com.amos.podsupapi.services;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-import java.io.File;
-
-import org.apache.logging.log4j.Logger;
-import org.apache.commons.io.FileUtils;
-import org.apache.logging.log4j.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -29,9 +24,9 @@ import com.amos.podsupapi.dto.SupplierLineItemDTO;
 import com.amos.podsupapi.dto.SupplierPODTO;
 import com.amos.podsupapi.dto.SupplierPODetailDTO;
 import com.amos.podsupapi.dto.report.SupplierPOReportDTO;
-import com.amos.podsupapi.exception.PoBusinessException;
 import com.amos.podsupapi.model.FactoryPODStatus;
-import com.amos.podsupapi.model.PODFile;
+import com.amos.podsupapi.model.File;
+import com.amos.podsupapi.model.PODStatusHistory;
 import com.amos.podsupapi.repository.SupplierRepository;
 
 @Service
@@ -43,24 +38,21 @@ public class SupplierServiceImpl implements SupplierService {
 
   @Autowired
   private AWSFileTransferComponent awsFileTransferComponent;
-  
-  private static final Logger logger = LogManager.getLogger(SupplierServiceImpl.class);
 
   @Override
   public List<SupplierPODTO> getSupplierPOListData(String dateFrom, String dateTo, String poNo, String vendor) {
 
-    String sqlSelect = "SELECT TO_CHAR(podstatus.i_serial) as i_serial," +
-        "         TO_CHAR(polink.i_order) AS order_no," +
-        "         TO_CHAR(cus.S_FIRSTNAME) AS firstname," +
-        "         TO_CHAR(cus.s_name) AS lastname," +
-        "         TO_CHAR(polink.i_pono) AS pono," +
-        "         TO_CHAR(keygodet_status.s_value) AS delivery_status," +
-        "         TO_CHAR(podstatus.d_delivery) as delivery_date," +
-        "         TO_CHAR(keygodet_delivery_by.s_value) AS delivery_by," +
-        "         TO_CHAR(podstatus.S_DELIVERY_TRACKING) AS tracking_no" +
-        "    FROM (SELECT DISTINCT det.i_order,item.i_vendor" +
-        "            FROM P_ITEM item, p_orddet det WHERE item.i_itemno = det.i_itemno) orderno," +
-        "         (SELECT *" +
+    String sqlSelect = "SELECT TO_CHAR (podstatus.i_serial) AS i_serial," +
+        "         TO_CHAR (polink.S_EXTERN_ORDERNO) AS order_no," +
+        "         TO_CHAR (cus.S_FIRSTNAME) AS firstname," +
+        "         TO_CHAR (cus.s_name) AS lastname," +
+        "         TO_CHAR (polink.i_pono) AS pono," +
+        "         TO_CHAR (keygodet_status.s_value) AS delivery_status," +
+        "         TO_CHAR (podstatus.S_REMARK) AS remark," +
+        "         TO_CHAR (podstatus.d_delivery) AS delivery_date," +
+        "         TO_CHAR (keygodet_delivery_by.s_value) AS delivery_by," +
+        "         TO_CHAR (podstatus.S_DELIVERY_TRACKING) AS tracking_no" +
+        "    FROM (SELECT *" +
         "            FROM S_KEY_GOSOFT_DET" +
         "           WHERE S_KEYWORD = 'POD_SENDBYSUP_DELIVERY_BY') keygodet_delivery_by," +
         "         (SELECT *" +
@@ -69,24 +61,43 @@ public class SupplierServiceImpl implements SupplierService {
         "         P_ORDSUM ordsum," +
         "         P_AUTO_FACTORY_POLINK polink," +
         "         WEBAPP.W05_P_FACTORY_POD_STATUS podstatus," +
-        "         P_CUSTOMER cus" +
-        "   WHERE     polink.i_order = orderno.i_order" +
+        "         P_CUSTOMER cus," +
+        "         P_POSUM posum," +
+        "         P_POSIZE pz," +
+        "         P_ITEM itm" +
+        "   WHERE     polink.i_order = ordsum.i_order" +
         "         AND polink.i_pono = podstatus.i_pono(+)" +
-        "         AND polink.i_order = ordsum.i_order(+)" +
-        "         AND polink.i_vendor = orderno.i_vendor" +
+        "         AND polink.S_EXTERN_ORDERNO = ordsum.S_EXTERN_ORDERNO(+)" +
         "         AND cus.i_account = ordsum.i_account" +
         "         AND podstatus.i_delivery_by = keygodet_delivery_by.s_sub_keyword(+)" +
         "         AND podstatus.C_STATUS = keygodet_status.s_sub_keyword(+)" +
-        "         AND orderno.i_vendor = :vendor";
+        "         AND polink.d_create = posum.d_order" +
+        "         AND polink.C_STATUS NOT IN ('G', 'D')" +
+        "         AND posum.c_status NOT IN ('C', 'J')" +
+        "         AND polink.i_pono = posum.i_pono" +
+        "         AND polink.I_PONO = pz.I_PONO" +
+        "         AND pz.I_ITEMNO = itm.I_ITEMNO" +
+        "         AND polink.i_vendor = :vendor";
 
     String sqlCondition = " ";
     sqlCondition = (CommonUtils.isNullOrEmpty(poNo)) ? sqlCondition : sqlCondition + " AND polink.i_pono = :poNo ";
     sqlCondition = (CommonUtils.isNullOrEmpty(dateFrom)) ? sqlCondition
-        : sqlCondition + " AND ordsum.d_create BETWEEN TO_DATE (:dateFrom, 'dd-mm-yyyy') ";
+        : sqlCondition + " AND polink.d_create BETWEEN TO_DATE (:dateFrom, 'dd-mm-yyyy') ";
     sqlCondition = (CommonUtils.isNullOrEmpty(dateTo)) ? sqlCondition
         : sqlCondition + " AND TO_DATE (:dateTo, 'dd-mm-yyyy') ";
 
-    String sqlOrderBy = " ORDER BY order_no ASC ";
+    String sqlOrderBy = " Group by podstatus.i_serial," +
+        "                 polink.S_EXTERN_ORDERNO," +
+        "                 cus.S_FIRSTNAME," +
+        "                 cus.s_name," +
+        "                 polink.i_pono," +
+        "                 keygodet_status.s_value," +
+        "                 podstatus.S_REMARK," +
+        "                 podstatus.d_delivery," +
+        "                 keygodet_delivery_by.s_value," +
+        "                 podstatus.S_DELIVERY_TRACKING" +
+        "                 ORDER BY order_no ASC" +
+        "                  ";
 
     String queryAll = sqlSelect + sqlCondition + sqlOrderBy;
 
@@ -103,9 +114,10 @@ public class SupplierServiceImpl implements SupplierService {
       supplierData.setLastname((String) resultSupplierDataList[3]);
       supplierData.setPoNo((String) resultSupplierDataList[4]);
       supplierData.setDelivery_status((String) resultSupplierDataList[5]);
-      supplierData.setDelivery_date((String) resultSupplierDataList[6]);
-      supplierData.setDelivery_by((String) resultSupplierDataList[7]);
-      supplierData.setTrackingNo((String) resultSupplierDataList[8]);
+      supplierData.setRemark((String) resultSupplierDataList[6]);
+      supplierData.setDelivery_date((String) resultSupplierDataList[7]);
+      supplierData.setDelivery_by((String) resultSupplierDataList[8]);
+      supplierData.setTrackingNo((String) resultSupplierDataList[9]);
 
       supplierDetailList.add(supplierData);
     }
@@ -130,7 +142,8 @@ public class SupplierServiceImpl implements SupplierService {
         "       TO_CHAR (keygodet_status.s_sub_keyword) AS status_key," +
         "       TO_CHAR (keygodet_status.s_value) AS status_word," +
         "       TO_CHAR (podstatus.d_delivery) AS delivery_date," +
-        "       TO_CHAR (podstatus.s_delivery_tracking) AS trackingno" +
+        "       TO_CHAR (podstatus.s_delivery_tracking) AS trackingno," +
+        "       TO_CHAR (podstatus.S_REMARK) as remark" +
         "  FROM P_AUTO_FACTORY_POLINK polink," +
         "       WEBAPP.W05_P_FACTORY_POD_STATUS podstatus," +
         "       P_ORDDET orddet," +
@@ -152,7 +165,7 @@ public class SupplierServiceImpl implements SupplierService {
         "       AND orddet.i_itemno = item.i_itemno" +
         "       AND podstatus.i_delivery_by = keygodet_delivery_by.s_sub_keyword(+)" +
         "       AND podstatus.c_status = keygodet_status.s_sub_keyword(+)" +
-        "       AND polink.i_order = :orderNo" +
+        "       AND polink.S_EXTERN_ORDERNO = :orderNo" +
         "       AND polink.i_pono = :poNo" +
         "       AND item.i_vendor = :vendor";
 
@@ -178,6 +191,7 @@ public class SupplierServiceImpl implements SupplierService {
         poDetail.setDelivery_by_value((String) resultPODet[11]);
         poDetail.setDelivery_date((String) resultPODet[12]);
         poDetail.setTracking_no((String) resultPODet[13]);
+        poDetail.setRemark((String) resultPODet[14]);
 
         poDetailList.add(poDetail);
         count++;
@@ -202,84 +216,63 @@ public class SupplierServiceImpl implements SupplierService {
   }
 
   @Override
-	@Transactional(rollbackFor = { RuntimeException.class, IOException.class, SQLException.class }, noRollbackFor = {
-			PoBusinessException.class })
-  public ReturnCode updateSupplierPODetail(String iuser, String iserial, String orderNo, String poNo, String vendor,
+  public void updateSupplierPODetail(String iuser, String iserial, String orderNo, String poNo, String vendor,
       String delivery_status, String delivery_date, String delivery_by, String trackingNo, String delivery_other,
-      String remark ,MultipartFile[] files) throws Exception {
+      MultipartFile[] files) throws ParseException {
+    // TODO Auto-generated method stub
+    // insert history
+    if (!CommonUtils.isNullOrEmpty(iuser) && !CommonUtils.isNullOrEmpty(orderNo) && !CommonUtils.isNullOrEmpty(poNo)
+        && !CommonUtils.isNullOrEmpty(delivery_status) && !CommonUtils.isNullOrEmpty(delivery_date)
+        && !CommonUtils.isNullOrEmpty(delivery_by)) {
 
-	  Integer iSerial = null;
-		if (supplierRepository.checkExitsPODStatus(orderNo, poNo)) {
-			FactoryPODStatus getPODDetByISerial = supplierRepository.fidPODStatusByID(Integer.valueOf(iserial));
-			supplierRepository.updateFactoryPODStatusDetail(getPODDetByISerial, delivery_status, delivery_date,
-					delivery_by, trackingNo, delivery_other);
-		} else {
+      try {
+        PODStatusHistory podHis = new PODStatusHistory();
+        podHis.setPono(Integer.valueOf(poNo));
 
-			iSerial = supplierRepository.insertPODStatus(iuser, orderNo, poNo, vendor, delivery_status, delivery_date,
-					delivery_by, delivery_other, trackingNo,remark);
-			persistDeliveryFile(files, poNo, iSerial);
-			 
-		}
-    
-   
-    
-    return ReturnCode.SUCCESS;
+        Date dateDelivery = new SimpleDateFormat("dd/MM/yyyy").parse(delivery_date);
+        podHis.setD_delivery(dateDelivery);
+
+        podHis.setDelivery_by(Integer.valueOf(delivery_by));
+        podHis.setUserId(Integer.valueOf(iuser));
+        podHis.setIorder(Integer.valueOf(orderNo));
+        podHis.setStatus(delivery_status);
+        podHis.setD_create(LocalDateTime.now());
+
+        supplierRepository.addHistory(podHis);
+
+        if (supplierRepository.checkExitsPODStatus(orderNo, poNo)) {
+          FactoryPODStatus getPODDetByISerial = supplierRepository.fidPODStatusByID(Integer.valueOf(iserial));
+          supplierRepository.updateFactoryPODStatusDetail(getPODDetByISerial, delivery_status, delivery_date, delivery_by,
+              trackingNo, delivery_other);
+        } else {
+          supplierRepository.insertPODStatus(iuser, orderNo, poNo, vendor, delivery_status, delivery_date, delivery_by,
+              delivery_other, trackingNo);
+        }
+      } catch (Exception e) {
+        System.out.println("error");
+      }
+
+    }
+    // try {
+    // addFilePODetail(files);
+    // } catch (Exception e) {
+    // // TODO Auto-generated catch block
+    // e.printStackTrace();
+    // }
   }
-  
-//  @Override
-//	@Transactional(rollbackFor = { RuntimeException.class, IOException.class, SQLException.class }, noRollbackFor = {
-//			PoBusinessException.class })
-//  private void persistDeliveryFile(MultipartFile[] files, String poNo , String orderNo ) throws Exception {
-//		int i = 1;
-//		String prefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-//
-//		String fileParent = String.format("%s/%s", AppConfig.getApiDeliveryBasePathFiles(), prefix);
-//
-//		for (MultipartFile file : files) {
-//			String filepath = String.format("%s/%s.%s.%s", fileParent, poNo, orderNo, i);
-//			saveResourceToStorage(file.getBytes(), fileParent, filepath);
-//
-//			PODFile image = new PODFile();
-//			image.setId(1);
-//			image.setS_file_name("testfile" + i);
-//			image.setS_url(filepath);
-//			image.setOrderNo(orderNo);
-//			image.setPoNo(poNo);
-//		    image.setD_create(LocalDateTime.now());
-//			image.setI_file(i);
-//			supplierRepository.addFileDB(image);
-//			i++;
-//		}
-//	}
-  
-	private void saveResourceToStorage(byte[] data, String fileParentPath, String filePath) throws IOException {
-		try {
-			awsFileTransferComponent.putObject(filePath, data);
-		} catch (Exception e) {
-			logger.error("can not savefile to AWS");
-			try {
-				File f = new File(fileParentPath);
-				f.mkdirs();
-				FileUtils.writeByteArrayToFile(new File(filePath), data);
-			} catch (Exception e1) {
-				logger.error("can not savefile to local");
-				throw (new RuntimeException("Can not save image file"));
-			}
-		}
-	}
 
   @Override
   public ReturnCode addFilePODetail(MultipartFile[] files) throws Exception {
     int i = 1;
     String prefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-    String fileParent = String.format("%s/%s", AppConfig.getApiDeliveryBasePathFiles(), prefix);
+    String fileParent = String.format("%s/%s", AppConfig.getApiDeliveryBasePathImages(), prefix);
 
     for (MultipartFile file : files) {
       String filepath = String.format("%s/%s.%s.%s", fileParent, "test" + i, "test" + i, i);
       saveResourceToStorage(file.getBytes(), filepath);
 
-      PODFile fileDB = new PODFile();
+      File fileDB = new File();
       fileDB.setI_file(i);
       fileDB.setS_file_name("testfile" + i);
       fileDB.setS_url(filepath);
@@ -331,30 +324,5 @@ public class SupplierServiceImpl implements SupplierService {
     }
     return supPOReportList;
   }
-
-
-	public void persistDeliveryFile(MultipartFile[] files, String poNo, Integer iSerial) throws Exception {
-		int i = 1;
-		String prefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-		String fileParent = String.format("%s/%s", AppConfig.getApiDeliveryBasePathFiles(), prefix);
-//		Integer iSerial = supplierRepository.getIserialStatus(poNo, orderNo);
-
-		for (MultipartFile file : files) {
-			String fileOrigin = file.getOriginalFilename();
-			String filepath = String.format("%s/PO%s.%s.%s", fileParent, poNo, i, fileOrigin);
-			saveResourceToStorage(file.getBytes(), fileParent, filepath);
-
-			PODFile image = new PODFile();
-			image.setId(iSerial);
-			image.setS_file_name(fileOrigin);
-			image.setS_url(filepath);
-			image.setPoNo(Integer.valueOf(poNo));
-			image.setD_create(LocalDateTime.now());
-			image.setI_file(i);
-			supplierRepository.addFileDB(image);
-			i++;
-		}
-
-	}
 
 }

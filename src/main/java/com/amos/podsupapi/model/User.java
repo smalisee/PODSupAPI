@@ -20,6 +20,7 @@ import javax.persistence.Table;
 import org.hibernate.annotations.NaturalId;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Getter;
@@ -32,7 +33,10 @@ import lombok.Setter;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class User implements Serializable {
 
-  private static final long serialVersionUID = 1L;
+  /**
+   * 
+   */
+  private static final long serialVersionUID = -3010027112755145621L;
 
   @Id
   @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "W05_P_USER_SEQ")
@@ -61,7 +65,7 @@ public class User implements Serializable {
   private String name;
 
   @JsonProperty("phone_no")
-  @Column(name = "S_PHONENO")
+  @Column(name = "S_PHONENO", columnDefinition = "LONGVARBINARY")
   private String phoneNo;
 
   @Column(name = "S_EMAIL")
@@ -73,8 +77,9 @@ public class User implements Serializable {
   /*
    * Relation
    */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @ManyToMany(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH,
-      CascadeType.PERSIST }, fetch = FetchType.LAZY)
+      CascadeType.PERSIST, CascadeType.ALL }, fetch = FetchType.LAZY)
   @JoinTable(name = "W05_P_USER_ROLE", joinColumns = {
       @JoinColumn(name = "I_USER_ID", nullable = false) },
       inverseJoinColumns = {
@@ -82,13 +87,17 @@ public class User implements Serializable {
   private List<Role> roles = new ArrayList<>();
 
   // Join prodline
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @ManyToMany(cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH,
-      CascadeType.PERSIST }, fetch = FetchType.LAZY)
+      CascadeType.PERSIST, CascadeType.ALL }, fetch = FetchType.LAZY)
   @JoinTable(name = "W05_P_USER_PRODLINE", joinColumns = {
       @JoinColumn(name = "I_USER_ID", nullable = false) },
       inverseJoinColumns = {
           @JoinColumn(name = "I_PRODLINE1", nullable = false),
           @JoinColumn(name = "I_PRODLINE3", nullable = false) })
-  private List<ProductLine> prodlines = new ArrayList<>();
+  private List<ProductLine> prodLines = new ArrayList<>();
+
+  // @JsonProperty("usrProdLine")
+  // private List<UserProductLine> usrProdLine;
 
 }

@@ -16,6 +16,8 @@ public class POManagementDTO implements Serializable {
   private String orderDate;
   private String channel;
   private String orderNo;
+  private String iorder;
+  private String c_payMode;
   private String payMode;
   private String firstName;
   private String lastName;

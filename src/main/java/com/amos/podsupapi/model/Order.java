@@ -15,13 +15,17 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name="P_ORDSUM")
+@Table(name = "P_ORDSUM", schema = "LNX")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Order implements Serializable{
-	
-	private static final long serialVersionUID = 1L;
+public class Order implements Serializable {
 
-	@Id
-	@Column(name="I_ORDER")
-	private int order;
+  private static final long serialVersionUID = 1L;
+
+  @Id
+  @Column(name = "I_ORDER")
+  private int order;
+
+  @Column(name = "C_SHIPTO")
+  private String shipto;
+
 }

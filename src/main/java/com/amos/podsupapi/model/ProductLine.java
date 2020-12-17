@@ -35,17 +35,23 @@ public class ProductLine implements Serializable {
   // this.pk = pordPK;
   // }
   @Id
+  @JsonIgnore
+  @JsonProperty("prodline1")
   @Column(name = "I_PRODLINE1")
-  @JsonProperty("prodLines1")
   private int prodline1;
 
   @Id
+  @JsonIgnore
+  @JsonProperty("prodline3")
   @Column(name = "I_PRODLINE3")
-  @JsonProperty("prodLines3")
   private int prodline3;
 
   @JsonIgnore
-  @ManyToMany(mappedBy = "prodlines")
+  @JsonProperty("mapProd")
+  private String mapProd;
+
+  @JsonIgnore
+  @ManyToMany(mappedBy = "prodLines")
   private List<User> users = new ArrayList<>();
 
 }

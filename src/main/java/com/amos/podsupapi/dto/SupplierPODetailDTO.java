@@ -26,6 +26,7 @@ public class SupplierPODetailDTO implements Serializable {
   private String delivery_by_value;
   private String delivery_date;
   private String tracking_no;
+  private String remark;
 
   private List<SupplierLineItemDTO> itemList;
 }

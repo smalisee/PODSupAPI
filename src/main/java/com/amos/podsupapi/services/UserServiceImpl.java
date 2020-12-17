@@ -18,6 +18,8 @@ import com.amos.podsupapi.dto.admin.UserDTO;
 import com.amos.podsupapi.model.ProductLine;
 import com.amos.podsupapi.model.Role;
 import com.amos.podsupapi.model.User;
+import com.amos.podsupapi.model.UserExternal;
+import com.amos.podsupapi.model.UserProductLine;
 import com.amos.podsupapi.repository.ProductlineRepository;
 import com.amos.podsupapi.repository.RoleRepository;
 import com.amos.podsupapi.repository.UserRepository;
@@ -66,8 +68,10 @@ public class UserServiceImpl implements UserService {
     for (User source : userRepository.getAllUsers(filter)) {
       UserDTO target = new UserDTO();
       BeanUtils.copyProperties(source, target);
+
       userList.add(target);
     }
+
     return userList;
   }
 
@@ -79,12 +83,35 @@ public class UserServiceImpl implements UserService {
 
     ArrayList<RoleDTO> tmpRList = new ArrayList<>();
 
+    if (source.getVendorNo() != null) {
+      user.setIvendorNo(source.getVendorNo());
+    }
+
     for (Role rSource : source.getRoles()) {
       RoleDTO rDto = new RoleDTO();
       BeanUtils.copyProperties(rSource, rDto);
       tmpRList.add(rDto);
     }
     user.setRoleList(tmpRList);
+
+    List<Object[]> resultProdline = userRepository.findProductLine(source.getId());
+
+    List<UserProductLine> usrProdLineList = new ArrayList<>();
+
+    if (resultProdline != null) {
+      for (Object[] rSourcePrdLine : resultProdline) {
+        UserProductLine usrPrdLine = new UserProductLine();
+
+        usrPrdLine.setUserId(Integer.valueOf((String) rSourcePrdLine[0]));
+        usrPrdLine.setProd1(Integer.valueOf((String) rSourcePrdLine[1]));
+        usrPrdLine.setProd3(Integer.valueOf((String) rSourcePrdLine[2]));
+        usrPrdLine.setMapProd(usrPrdLine.getProd3() + " - " + usrPrdLine.getProd1());
+
+        usrProdLineList.add(usrPrdLine);
+      }
+      user.setUsrProdLine(usrProdLineList);
+    }
+
     return user;
   }
 
@@ -106,18 +133,18 @@ public class UserServiceImpl implements UserService {
     user.setRoles(addRoles);
 
     List<ProductLine> addProdlines = new ArrayList<>();
-    for (ProductLine p : user.getProdlines()) {
+    for (ProductLine p : user.getProdLines()) {
       addProdlines.add(prodRepository.getProdlineById(p.getProdline1(), p.getProdline3()));
     }
-    user.setProdlines(addProdlines);
+    user.setProdLines(addProdlines);
 
     if (user.getId() == null) {
       if (userRepository.userExists(user.getUsername())) {
-        return ReturnCode.SAME_ID_ALREADY_REGISTER;
+        return ReturnCode.USERNAME_ALREADY_EXIST;
       }
       if (!CommonUtils.isNullOrEmpty(user.getPassword())) {
         if (user.getPassword().length() < 4) {
-          return ReturnCode.SAME_ID_ALREADY_REGISTER;
+          return ReturnCode.INVALID_PASSWORD_LENGTH;
         } else {
           user.setPassword(CommonUtils.passwordEncrypt(user.getPassword()));
         }
@@ -126,6 +153,7 @@ public class UserServiceImpl implements UserService {
         userRepository.addUser(user);
         code = ReturnCode.SUCCESS;
       } catch (Exception ex) {
+        code = ReturnCode.USERNAME_ALREADY_EXIST;
         logger.error("addUser ERROR :", ex);
       }
     } else {
@@ -160,19 +188,31 @@ public class UserServiceImpl implements UserService {
       // }
       //
       // }else {
+      User checkType = userRepository.getUserById(user.getId());
 
-      if (user.getPassword() == null) {
-        user.setPassword(userRepository.getUserById(user.getId()).getPassword());
+      if (checkType.getType().equalsIgnoreCase("I")) {
+        if (user.getPassword() == null) {
+          user.setPassword(userRepository.getUserById(user.getId()).getPassword());
 
-      } else {
-        user.setPassword(CommonUtils.passwordEncrypt(user.getPassword()));
+        } else {
+          user.setPassword(CommonUtils.passwordEncrypt(user.getPassword()));
+        }
+        userRepository.updateUserInternal(user);
+        code = ReturnCode.SUCCESS;
 
+      } else if (checkType.getType().equalsIgnoreCase("E")) {
+        UserExternal usrEx = mapper.readValue(payload, UserExternal.class);
+        if (user.getPassword() == null) {
+          usrEx.setPassword(userRepository.getUserById(user.getId()).getPassword());
+
+        } else {
+          usrEx.setPassword(CommonUtils.passwordEncrypt(user.getPassword()));
+        }
+        userRepository.updateUserExternal(usrEx);
+        code = ReturnCode.SUCCESS;
       }
-
-      userRepository.updateUser(user);
-      code = ReturnCode.SUCCESS;
       // }
-
+      return code;
     }
     return code;
   }

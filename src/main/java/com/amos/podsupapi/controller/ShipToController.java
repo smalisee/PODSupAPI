@@ -1,7 +1,5 @@
 package com.amos.podsupapi.controller;
 
-import java.util.List;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +31,8 @@ public class ShipToController {
   @CrossOrigin
   @GetMapping(value = "/get_shipto", produces = { "application/json; charset=UTF-8" })
   public ResponseEntity<APIResultDTO> getAutoPO(@RequestParam(name = "pono", required = false) int pono) {
-    List<ShipToDTO> result = shipToService.getAutoPO(pono);
-    if (result.isEmpty()) {
+    ShipToDTO result = shipToService.getAutoPO(pono);
+    if (result == null) {
       return new ResponseEntity<>(new APIResultDTO(new ReturnStatusDTO(ReturnCode.NO_DATA_AUTO_PO), result), HttpStatus.OK);
     } else {
       return new ResponseEntity<>(new APIResultDTO(new ReturnStatusDTO(ReturnCode.SUCCESS), result), HttpStatus.OK);

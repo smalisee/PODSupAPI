@@ -65,8 +65,5 @@ public class FactoryPODStatus implements Serializable {
 
   @Column(name = "I_ORDER")
   private int orderNo;
-  
-  @Column(name = "S_REMARK")
-  private String remark;
 
 }
