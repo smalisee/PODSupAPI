@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.amos.podsupapi.model.AutoFactoryPO;
 import com.amos.podsupapi.model.Order;
+import com.amos.podsupapi.model.PODFile;
 
 @Repository
 public class AutoFactoryPORepositoryImpl implements AutoFactoryPORepository {
@@ -83,5 +84,17 @@ public class AutoFactoryPORepositoryImpl implements AutoFactoryPORepository {
     po.setShipTo("R");
     entityManager.flush();
   }
+
+@Override
+public PODFile getFileByKey(String poNo, int imageId) {
+	String sql = "select fil from PODFile fil where fil.i_file = :imageId and fil.poNo = :poNo ";
+
+	int iPono = Integer.parseInt(poNo);
+	
+	return entityManager.createQuery(sql, PODFile.class)
+			.setParameter("poNo", iPono)
+			.setParameter("imageId", imageId)
+		.getSingleResult();
+}
 
 }

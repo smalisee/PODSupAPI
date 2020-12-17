@@ -9,6 +9,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+
+import org.apache.logging.log4j.Logger;
+import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -24,8 +32,9 @@ import com.amos.podsupapi.dto.SupplierLineItemDTO;
 import com.amos.podsupapi.dto.SupplierPODTO;
 import com.amos.podsupapi.dto.SupplierPODetailDTO;
 import com.amos.podsupapi.dto.report.SupplierPOReportDTO;
+import com.amos.podsupapi.exception.PoBusinessException;
 import com.amos.podsupapi.model.FactoryPODStatus;
-import com.amos.podsupapi.model.File;
+import com.amos.podsupapi.model.PODFile;
 import com.amos.podsupapi.model.PODStatusHistory;
 import com.amos.podsupapi.repository.SupplierRepository;
 
@@ -38,6 +47,8 @@ public class SupplierServiceImpl implements SupplierService {
 
   @Autowired
   private AWSFileTransferComponent awsFileTransferComponent;
+  
+  private static final Logger logger = LogManager.getLogger(SupplierServiceImpl.class);
 
   @Override
   public List<SupplierPODTO> getSupplierPOListData(String dateFrom, String dateTo, String poNo, String vendor) {
@@ -216,16 +227,19 @@ public class SupplierServiceImpl implements SupplierService {
   }
 
   @Override
-  public void updateSupplierPODetail(String iuser, String iserial, String orderNo, String poNo, String vendor,
+	@Transactional(rollbackFor = { RuntimeException.class, IOException.class, SQLException.class }, noRollbackFor = {
+			PoBusinessException.class })
+  public ReturnCode updateSupplierPODetail(String iuser, String iserial, String orderNo, String poNo, String vendor,
       String delivery_status, String delivery_date, String delivery_by, String trackingNo, String delivery_other,
-      MultipartFile[] files) throws ParseException {
-    // TODO Auto-generated method stub
+     String remark ,MultipartFile[] files) throws Exception {
+ 
     // insert history
     if (!CommonUtils.isNullOrEmpty(iuser) && !CommonUtils.isNullOrEmpty(orderNo) && !CommonUtils.isNullOrEmpty(poNo)
         && !CommonUtils.isNullOrEmpty(delivery_status) && !CommonUtils.isNullOrEmpty(delivery_date)
         && !CommonUtils.isNullOrEmpty(delivery_by)) {
 
       try {
+        Integer iSerialInsert = null;
         PODStatusHistory podHis = new PODStatusHistory();
         podHis.setPono(Integer.valueOf(poNo));
 
@@ -241,60 +255,40 @@ public class SupplierServiceImpl implements SupplierService {
         supplierRepository.addHistory(podHis);
 
         if (supplierRepository.checkExitsPODStatus(orderNo, poNo)) {
-          FactoryPODStatus getPODDetByISerial = supplierRepository.fidPODStatusByID(Integer.valueOf(iserial));
-          supplierRepository.updateFactoryPODStatusDetail(getPODDetByISerial, delivery_status, delivery_date, delivery_by,
-              trackingNo, delivery_other);
+        	iSerialInsert = supplierRepository.insertPODStatus(iuser, orderNo, poNo, vendor, delivery_status, delivery_date,
+					delivery_by, delivery_other, trackingNo,remark);
+			persistDeliveryFile(files, poNo, iSerialInsert);
         } else {
-          supplierRepository.insertPODStatus(iuser, orderNo, poNo, vendor, delivery_status, delivery_date, delivery_by,
-              delivery_other, trackingNo);
+			FactoryPODStatus getPODDetByISerial = supplierRepository.fidPODStatusByID(Integer.valueOf(iserial));
+	          supplierRepository.updateFactoryPODStatusDetail(getPODDetByISerial, delivery_status, delivery_date, delivery_by,
+	              trackingNo, delivery_other);
         }
+        
       } catch (Exception e) {
         System.out.println("error");
+        return ReturnCode.INTERNAL_WEB_SERVICE_ERROR;
       }
 
     }
-    // try {
-    // addFilePODetail(files);
-    // } catch (Exception e) {
-    // // TODO Auto-generated catch block
-    // e.printStackTrace();
-    // }
-  }
-
-  @Override
-  public ReturnCode addFilePODetail(MultipartFile[] files) throws Exception {
-    int i = 1;
-    String prefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-
-    String fileParent = String.format("%s/%s", AppConfig.getApiDeliveryBasePathImages(), prefix);
-
-    for (MultipartFile file : files) {
-      String filepath = String.format("%s/%s.%s.%s", fileParent, "test" + i, "test" + i, i);
-      saveResourceToStorage(file.getBytes(), filepath);
-
-      File fileDB = new File();
-      fileDB.setI_file(i);
-      fileDB.setS_file_name("testfile" + i);
-      fileDB.setS_url(filepath);
-      fileDB.setD_create(LocalDateTime.now());
-
-      supplierRepository.addFileDB(fileDB);
-      i++;
-    }
-
     return ReturnCode.SUCCESS;
   }
+  
+  	private void saveResourceToStorage(byte[] data, String fileParentPath, String filePath) throws IOException {
+		try {
+			awsFileTransferComponent.putObject(filePath, data);
+		} catch (Exception e) {
+			logger.error("can not savefile to AWS");
+			try {
+				File f = new File(fileParentPath);
+				f.mkdirs();
+				FileUtils.writeByteArrayToFile(new File(filePath), data);
+			} catch (Exception e1) {
+				logger.error("can not savefile to local");
+				throw (new RuntimeException("Can not save image file"));
+			}
+		}
+  	}
 
-  private void saveResourceToStorage(byte[] bytes, String filepath) {
-    // TODO Auto-generated method stub
-    try {
-      awsFileTransferComponent.putObject(filepath, bytes);
-    } catch (Exception e) {
-      // logger.error("can not savefile to AWS");
-      System.out.println("error จ้า เพราะไรไม่รู้" + e);
-    }
-
-  }
 
   @Override
   public List<SupplierPOReportDTO> getSupplierPODetailReport(POManageReportSearchDTO searchBean) {
@@ -324,5 +318,31 @@ public class SupplierServiceImpl implements SupplierService {
     }
     return supPOReportList;
   }
+
+
+	public void persistDeliveryFile(MultipartFile[] files, String poNo, Integer iSerial) throws Exception {
+		int i = 1;
+		String prefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+		String fileParent = String.format("%s/%s", AppConfig.getApiDeliveryBasePathFiles(), prefix);
+//		Integer iSerial = supplierRepository.getIserialStatus(poNo, orderNo);
+
+		for (MultipartFile file : files) {
+			String fileOrigin = file.getOriginalFilename();
+			String filepath = String.format("%s/PO%s.%s.%s", fileParent, poNo, i, fileOrigin);
+			saveResourceToStorage(file.getBytes(), fileParent, filepath);
+
+			PODFile image = new PODFile();
+			image.setId(iSerial);
+			image.setS_file_name(fileOrigin);
+			image.setS_url(filepath);
+			image.setPoNo(Integer.valueOf(poNo));
+			image.setD_create(LocalDateTime.now());
+			image.setI_file(i);
+			supplierRepository.addFileDB(image);
+			i++;
+		}
+
+	}
+
 
 }

@@ -3,6 +3,7 @@ package com.amos.podsupapi.repository;
 import java.util.List;
 
 import com.amos.podsupapi.model.AutoFactoryPO;
+import com.amos.podsupapi.model.PODFile;
 
 public interface AutoFactoryPORepository {
 
@@ -21,5 +22,7 @@ public interface AutoFactoryPORepository {
   void updatePOrdsum(Integer order);
 
   void updatePOFacoryShipto(int pono);
+
+  PODFile getFileByKey(String poNo, int imageId);
 
 }

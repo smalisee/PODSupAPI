@@ -1,7 +1,10 @@
 package com.amos.podsupapi.controller;
 
 import java.text.ParseException;
+import java.time.LocalDateTime;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,10 +22,13 @@ import com.amos.podsupapi.dto.APIResultDTO;
 import com.amos.podsupapi.dto.ReturnStatusDTO;
 import com.amos.podsupapi.dto.SupplierPODTO;
 import com.amos.podsupapi.dto.SupplierPODetailDTO;
+import com.amos.podsupapi.model.PODFile;
 import com.amos.podsupapi.services.SupplierService;
 
 @RestController
 public class SupplierController {
+	
+private static final Logger logger = LogManager.getLogger(SupplierController.class);
 
   @Autowired
   private SupplierService supplierService;
@@ -85,10 +91,24 @@ public class SupplierController {
       @RequestParam(name = "delivery_other", required = false) String delivery_other,
       @RequestParam(name = "iserial", required = false) String iserial,
       @RequestParam(name = "iuser", required = false) String iuser,
-      @RequestParam(name = "files", required = false) MultipartFile[] files) throws ParseException {
+      @RequestParam(name = "remark", required = false) String remark,
+      @RequestParam(name = "files", required = false) MultipartFile[] files)  {
 
-    supplierService.updateSupplierPODetail(iuser, iserial, orderNo, poNo, vendor, delivery_status, delivery_date, delivery_by,
-        trackingNo, delivery_other, files);
+	  try {
+		  
+		  supplierService.updateSupplierPODetail(iuser, iserial, orderNo, poNo, vendor, delivery_status, delivery_date, delivery_by,
+			        trackingNo, delivery_other,remark, files);
+		  
+//		  supplierService.persistDeliveryFile(files, poNo , orderNo);
+	  }
+	  catch(Exception e) {
+		  logger.error(String.format("update_supplier_po_detail %s %s Transaction was NOT Rollback [%s]", e.getClass().getName(),
+					e.getMessage(), iuser, iserial, orderNo, poNo, vendor, delivery_status, delivery_date, delivery_by,
+			        trackingNo, delivery_other, files), e);
+			return new ResponseEntity<>(new APIResultDTO(new ReturnStatusDTO(ReturnCode.INTERNAL_WEB_ERROR)),
+					HttpStatus.INTERNAL_SERVER_ERROR);
+	  }
+   
     return new ResponseEntity<>(new APIResultDTO(new ReturnStatusDTO(ReturnCode.SUCCESS)), HttpStatus.OK);
 
   }

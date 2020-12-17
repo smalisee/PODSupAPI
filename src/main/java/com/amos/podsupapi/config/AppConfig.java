@@ -15,11 +15,11 @@ public class AppConfig {
   private AppConfig() {
   }
 
-  // Properties
-  // appResource
-  private static String apiDeliveryBasePathImages;
-  private static String apiURLGetLocationStoreExternalAPI;
-  private static String apiURLGetNearbyStoreExternalAPI;
+	// Properties
+	//appResource
+	private static String apiDeliveryBasePathFiles = "/appstore/mos/PODSubAPI/resource/images";
+	private static String apiURLGetLocationStoreExternalAPI;
+	private static String apiURLGetNearbyStoreExternalAPI;
 
   // Location
   private static String locationWarehouseDefaultLatitude;
@@ -71,10 +71,10 @@ public class AppConfig {
       AppConfig.apiURLGetLocationStoreExternalAPI = prop.getProperty("api.url.external.api.getstorelocation");
       AppConfig.apiURLGetNearbyStoreExternalAPI = prop.getProperty("api.url.external.api.getnearbystore");
 
-      AppConfig.apiDeliveryBasePathImages = prop.getProperty("api.delivery.image.path");
-      AppConfig.authorization = prop.getProperty("header.auth");
-      AppConfig.jwtSecretHMAC256 = prop.getProperty("jwt.token.secret.HMAC256");
-      AppConfig.jwtDefaultTokenExpireHours = prop.getProperty("jwt.token.expire.hours");
+			AppConfig.apiDeliveryBasePathFiles = prop.getProperty("api.delivery.file.path");
+			AppConfig.authorization = prop.getProperty("header.auth");
+			AppConfig.jwtSecretHMAC256 = prop.getProperty("jwt.token.secret.HMAC256");
+			AppConfig.jwtDefaultTokenExpireHours = prop.getProperty("jwt.token.expire.hours");
 
       AppConfig.ldapUsername = prop.getProperty("ldap.username");
       AppConfig.ldapPassword = prop.getProperty("ldap.password");
@@ -90,9 +90,9 @@ public class AppConfig {
       AppConfig.awsSecretKey = prop.getProperty("aws.s3.secretkey");
       AppConfig.awsBucketName = prop.getProperty("aws.s3.bucket");
 
-      AppConfig.cronSyncImageAwsEnable = Boolean.parseBoolean(prop.getProperty("cron.sync.image.aws.enable"));
-    }
-  }
+			AppConfig.cronSyncImageAwsEnable = Boolean.parseBoolean(prop.getProperty("cron.sync.file.aws.enable"));
+		}
+	}
 
   public static String getLocationWarehouseDefaultLatitude() {
     return locationWarehouseDefaultLatitude;
@@ -142,9 +142,9 @@ public class AppConfig {
     return ldapDn;
   }
 
-  public static String getApiDeliveryBasePathImages() {
-    return apiDeliveryBasePathImages;
-  }
+	public static String getApiDeliveryBasePathFiles() {
+		return apiDeliveryBasePathFiles;
+	}
 
   public static String getApiURLGetLocationStoreExternalAPI() {
     return apiURLGetLocationStoreExternalAPI;
@@ -178,24 +178,21 @@ public class AppConfig {
     return awsBucketName;
   }
 
-  private static final String CURRENT_CONFIG_LOG_FORMAT_STR = "%s = %s;" + System.lineSeparator();
-  private static final String CURRENT_CONFIG_LOG_FORMAT_NUMBER = "%s = %d;" + System.lineSeparator();
-
-  public static String getCurrentConfig() {
-    String current = "Current config";
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "BasePathImages", getApiDeliveryBasePathImages());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "BasePathImages", getAuthorization());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "DefaultTokenExpireHours", getDefaultTokenExpireHours());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapDn", getLdapDn());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapDomain", getLdapDomain());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapServerPrimary", getLdapServerPrimary());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapServerSecondary", getLdapServerSecondary());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapServerThridary", getLdapServerThridary());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapUsername", getLdapUsername());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LocationWarehouseDefaultLatitude",
-        getLocationWarehouseDefaultLatitude());
-    current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LocationWarehouseDefaultLongitude",
-        getLocationWarehouseDefaultLongitude());
+	private static final String CURRENT_CONFIG_LOG_FORMAT_STR = "%s = %s;"+System.lineSeparator();
+	private static final String CURRENT_CONFIG_LOG_FORMAT_NUMBER = "%s = %d;"+System.lineSeparator();
+	public static String getCurrentConfig() {
+		String current = "Current config";
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "BasePathFiles",getApiDeliveryBasePathFiles());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "BasePathFiles",getAuthorization());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "DefaultTokenExpireHours",getDefaultTokenExpireHours());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapDn",getLdapDn());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapDomain",getLdapDomain());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapServerPrimary",getLdapServerPrimary());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapServerSecondary",getLdapServerSecondary());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapServerThridary",getLdapServerThridary());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LdapUsername",getLdapUsername());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LocationWarehouseDefaultLatitude",getLocationWarehouseDefaultLatitude());
+		current +=  String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "LocationWarehouseDefaultLongitude",getLocationWarehouseDefaultLongitude());
 
     current += String.format(CURRENT_CONFIG_LOG_FORMAT_STR, "awsProxyHost", getAwsProxyHost());
     current += String.format(CURRENT_CONFIG_LOG_FORMAT_NUMBER, "awsProxyPort", getAwsProxyPort());

@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.amos.podsupapi.common.ReturnCode;
 import com.amos.podsupapi.model.FactoryPODStatus;
-import com.amos.podsupapi.model.File;
+import com.amos.podsupapi.model.PODFile;
 import com.amos.podsupapi.model.PODStatusHistory;
 
 public interface SupplierRepository {
@@ -22,11 +22,13 @@ public interface SupplierRepository {
 
   FactoryPODStatus fidPODStatusByID(Integer i_serialFacPODStatus);
 
-  void addFileDB(File fileDB);
+  void addFileDB(PODFile fileDB);
 
-  void insertPODStatus(String iuser, String orderNo, String poNo, String vendor, String delivery_status, String delivery_date,
-      String delivery_by, String delivery_other, String trackingNo) throws ParseException;
-
+  Integer insertPODStatus(String iuser, String orderNo, String poNo, String vendor, String delivery_status, String delivery_date,
+      String delivery_by, String delivery_other, String trackingNo, String remark) throws ParseException;
+  
+//  Integer getIserialStatus (String poNo, String orderNo);
+  
   boolean checkExitsPODStatus(String orderNo, String poNo);
 
   void addHistory(PODStatusHistory podHis);

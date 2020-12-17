@@ -59,6 +59,9 @@ public class FactoryPODStatus implements Serializable {
 
   @Column(name = "S_DELIVERY_TRACKING")
   private String tracking;
+  
+  @Column(name = "S_REMARK")
+  private String remark;
 
   @Column(name = "I_USER_ID")
   private int userId;

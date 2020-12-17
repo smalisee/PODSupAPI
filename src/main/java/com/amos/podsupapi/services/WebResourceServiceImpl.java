@@ -1,8 +1,6 @@
 package com.amos.podsupapi.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +15,6 @@ import com.amos.podsupapi.exception.PoBusinessException;
 import com.amos.podsupapi.model.PODFile;
 import com.amos.podsupapi.repository.AutoFactoryPORepository;
 
-import java.io.FileNotFoundException;
-import java.net.MalformedURLException;
-import java.nio.file.Path;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
@@ -30,8 +24,6 @@ import javax.persistence.PersistenceContext;
 public class WebResourceServiceImpl implements WebResourceService {
 
 	Logger logger = LogManager.getLogger(WebResourceController.class);
-	
-	private  Path fileStorageLocation;
 	
 	@Autowired
 	private AutoFactoryPORepository autoFactoryPORepository;

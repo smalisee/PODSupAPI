@@ -16,7 +16,7 @@ import org.springframework.stereotype.Repository;
 import com.amos.podsupapi.common.CommonUtils;
 import com.amos.podsupapi.common.ReturnCode;
 import com.amos.podsupapi.model.FactoryPODStatus;
-import com.amos.podsupapi.model.File;
+import com.amos.podsupapi.model.PODFile;
 import com.amos.podsupapi.model.PODStatusHistory;
 
 @Transactional
@@ -127,14 +127,14 @@ public class SupplierRepositoryImpl implements SupplierRepository {
   }
 
   @Override
-  public void addFileDB(File fileDB) {
+  public void addFileDB(PODFile fileDB) {
     // TODO Auto-generated method stub
     entityManager.persist(fileDB);
   }
 
   @Override
-  public void insertPODStatus(String iuser, String orderNo, String poNo, String vendor, String delivery_status,
-      String delivery_date, String delivery_by, String delivery_other, String trackingNo) throws ParseException {
+  public Integer insertPODStatus(String iuser, String orderNo, String poNo, String vendor, String delivery_status,
+      String delivery_date, String delivery_by, String delivery_other, String trackingNo, String remark) throws ParseException {
     // TODO Auto-generated method stub
     FactoryPODStatus setNewPODStatus = new FactoryPODStatus();
     setNewPODStatus.setPono(Integer.valueOf(poNo));
@@ -149,8 +149,11 @@ public class SupplierRepositoryImpl implements SupplierRepository {
     setNewPODStatus.setTracking(trackingNo);
     setNewPODStatus.setUserId(Integer.valueOf(iuser));
     setNewPODStatus.setOrderNo(Integer.valueOf(orderNo));
-
+    setNewPODStatus.setRemark(remark);
+    
     entityManager.persist(setNewPODStatus);
+    entityManager.flush();
+    return setNewPODStatus.getId();
   }
 
   @Override
